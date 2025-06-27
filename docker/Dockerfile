@@ -1,14 +1,18 @@
-FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
+# Используем официальный образ TensorFlow с поддержкой GPU, Python 3.11
+FROM tensorflow/tensorflow:2.19.0-gpu
 
-RUN apt-get update && apt-get install -y \
-    python3.10 python3.10-venv python3-pip build-essential python3.10-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+# Рабочая директория внутри контейнера
 WORKDIR /app
 
-COPY requirements.txt /app/
+# Установим PYTHONPATH, чтобы работали абсолютные импорты из src
+ENV PYTHONPATH=/app
 
-RUN python3.10 -m pip install --upgrade pip setuptools wheel && \
-    python3.10 -m pip install -r requirements.txt
+# Копируем файл зависимостей
+COPY requirements.txt .
 
+# Устанавливаем зависимости
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements.txt
+
+# По умолчанию запускаем интерактивный bash
 CMD ["/bin/bash"]
