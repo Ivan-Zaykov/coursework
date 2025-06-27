@@ -1,4 +1,4 @@
-from src.utils.timing_logger import TimingLogger
+from src.utils.metric_logger import MetricLogger
 import os
 import tensorflow as tf
 from src.utils.data_loader import load_mnist
@@ -8,7 +8,7 @@ from src.utils.path_utils import MODEL_DIR
 MODEL_NAME = "TF Logistic Regression"
 
 results_logger, error_logger = setup_loggers()
-timing_logger = TimingLogger(results_logger, model_name=MODEL_NAME)
+metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
 def train_logistic_regression_tf(epochs=10, batch_size=128):
     try:
@@ -30,9 +30,9 @@ def train_logistic_regression_tf(epochs=10, batch_size=128):
                 metrics=['accuracy']
             )
 
-            timing_logger.start("training")
+            metric_logger.start("training")
             model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, verbose=2)
-            timing_logger.stop( "training")
+            metric_logger.stop("training")
 
             model.save(MODEL_PATH)
             results_logger.info(f"Model saved to {MODEL_PATH}")
@@ -50,9 +50,9 @@ def evaluate_logistic_regression_tf(model):
     try:
         _, _, X_test, y_test = load_mnist(flatten=True, normalize=True)
 
-        timing_logger.start( "evaluation")
+        metric_logger.start("evaluation")
         loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-        timing_logger.stop( "evaluation")
+        metric_logger.stop("evaluation")
 
         result_msg = f"TF Logistic Regression accuracy: {accuracy:.4f}"
         print(result_msg)
@@ -64,9 +64,13 @@ def evaluate_logistic_regression_tf(model):
 
 
 if __name__ == "__main__":
-    timing_logger.start("total_run")
+    results_logger.info(f"=== {MODEL_NAME} START ===")
+
+    metric_logger.start("total_run")
     model = train_logistic_regression_tf()
     if model:
         evaluate_logistic_regression_tf(model)
-    timing_logger.stop("total_run")
-    timing_logger.log_all()
+    metric_logger.stop("total_run")
+    metric_logger.log_all()
+
+    results_logger.info(f"=== {MODEL_NAME} STOP ===")

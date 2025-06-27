@@ -7,13 +7,13 @@ from sklearn.metrics import accuracy_score
 from src.utils.data_loader import load_mnist
 from src.utils.logger_setup import setup_loggers
 from src.utils.path_utils import MODEL_DIR
-from src.utils.timing_logger import TimingLogger
+from src.utils.metric_logger import MetricLogger
 
 MODEL_NAME = "SVM"
 MODEL_PATH = os.path.join(MODEL_DIR, "svm_model.joblib")
 
 results_logger, error_logger = setup_loggers()
-timing_logger = TimingLogger(results_logger, model_name=MODEL_NAME)
+metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
 def train_svm():
     try:
@@ -27,10 +27,10 @@ def train_svm():
         else:
             clf = svm.SVC(kernel='linear')
             results_logger.info("Training SVM model...")
-            timing_logger.start("train")
+            metric_logger.start("train")
             clf.fit(X_train, y_train)
-            timing_logger.stop("train")
-            elapsed_train = timing_logger.durations.get(f"{MODEL_NAME}_train", None)
+            metric_logger.stop("train")
+            elapsed_train = metric_logger.durations.get(f"{MODEL_NAME}_train", None)
             if elapsed_train is not None:
                 results_logger.info(f"Training completed in {elapsed_train:.2f} seconds")
             joblib.dump(clf, MODEL_PATH)
@@ -45,7 +45,7 @@ def evaluate_svm(clf):
     try:
         _, _, X_test, y_test = load_mnist(flatten=True, normalize=True)
         results_logger.info("Starting prediction...")
-        timing_logger.start("evaluate")
+        metric_logger.start("evaluate")
 
         predictions = []
         batch_size = 1000
@@ -55,7 +55,7 @@ def evaluate_svm(clf):
             predictions.extend(batch_preds)
         predictions = predictions[:len(X_test)]
 
-        timing_logger.stop("evaluate")
+        metric_logger.stop("evaluate")
 
         accuracy = accuracy_score(y_test, predictions)
         results_logger.info(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
@@ -65,9 +65,13 @@ def evaluate_svm(clf):
         print(f"Произошла ошибка при оценке: {e}")
 
 if __name__ == "__main__":
-    timing_logger.start("total_run")
+    results_logger.info(f"=== {MODEL_NAME} START ===")
+
+    metric_logger.start("total_run")
     model = train_svm()
     if model:
         evaluate_svm(model)
-    timing_logger.stop("total_run")
-    timing_logger.log_all()
+    metric_logger.stop("total_run")
+    metric_logger.log_all()
+
+    results_logger.info(f"=== {MODEL_NAME} STOP ===")

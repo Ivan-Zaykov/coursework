@@ -2,25 +2,25 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from src.utils.data_loader import load_mnist
 from src.utils.logger_setup import setup_loggers
-from src.utils.timing_logger import TimingLogger
+from src.utils.metric_logger import MetricLogger
 
 MODEL_NAME = "k-NN"  # правильное имя модели
 
 results_logger, error_logger = setup_loggers()
-timing_logger = TimingLogger(results_logger, model_name=MODEL_NAME)
+metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
 def train_and_evaluate_knn(k=3):
     try:
         X_train, y_train, X_test, y_test = load_mnist(flatten=True, normalize=True)
 
-        timing_logger.start("train")
+        metric_logger.start("train")
         knn = KNeighborsClassifier(n_neighbors=k)
         knn.fit(X_train, y_train)
-        timing_logger.stop("train")
+        metric_logger.stop("train")
 
-        timing_logger.start("evaluate")
+        metric_logger.start("evaluate")
         y_pred = knn.predict(X_test)
-        timing_logger.stop("evaluate")
+        metric_logger.stop("evaluate")
 
         accuracy = accuracy_score(y_test, y_pred)
         result_msg = f"{MODEL_NAME} accuracy (k={k}): {accuracy:.4f}"
@@ -32,5 +32,11 @@ def train_and_evaluate_knn(k=3):
         print(f"Произошла ошибка: {e}")
 
 if __name__ == "__main__":
+    results_logger.info(f"=== {MODEL_NAME} START ===")
+
+    metric_logger.start("total_run")
     train_and_evaluate_knn()
-    timing_logger.log_all()
+    metric_logger.stop("total_run")
+    metric_logger.log_all()
+
+    results_logger.info(f"=== {MODEL_NAME} STOP ===")
