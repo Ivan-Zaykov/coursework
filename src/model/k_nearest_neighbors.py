@@ -23,6 +23,8 @@ def train_and_evaluate_knn(k=3):
         metric_logger.stop("evaluate")
 
         accuracy = accuracy_score(y_test, y_pred)
+        metric_logger.set_accuracy(accuracy)
+
         result_msg = f"{MODEL_NAME} accuracy (k={k}): {accuracy:.4f}"
         print(result_msg)
         results_logger.info(f"Model: {MODEL_NAME}, k={k}, Accuracy: {accuracy:.4f}")

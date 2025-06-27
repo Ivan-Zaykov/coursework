@@ -21,6 +21,12 @@ class MetricLogger:
         self.cpu_usages = {}
         self.ram_usages = {}
         self.gpu_usages = {}
+        self.accuracy_scores = {}
+
+    def set_accuracy(self, accuracy: float):
+        """Установить accuracy для total_run"""
+        key = f"{self.model_name}_total_run"
+        self.accuracy_scores[key] = accuracy
 
     def start(self, metric_name: str):
         key = f"{self.model_name}_{metric_name}"
@@ -59,44 +65,39 @@ class MetricLogger:
         )
 
     def log_all(self):
-        headers = ["Metric", "Duration (sec)", "Peak CPU (%)", "Peak RAM (MB)", "Peak GPU (%)"]
-        # Формируем строки таблицы
+        headers = ["Metric", "Duration (sec)", "Peak CPU (%)", "Peak RAM (MB)", "Peak GPU (%)", "Accuracy"]
         rows = []
+
         for key, duration in self.durations.items():
             max_cpu = max(self.cpu_usages.get(key, [0]))
             max_ram = max(self.ram_usages.get(key, [0]))
             gpu_values = [v for v in self.gpu_usages.get(key, []) if v is not None]
             max_gpu = max(gpu_values) if gpu_values else None
+            accuracy = self.accuracy_scores.get(key, "—")
 
             row = [
                 key,
                 f"{duration:.4f}",
                 f"{max_cpu:.1f}",
                 f"{max_ram / (1024 ** 2):.1f}",
-                f"{max_gpu:.1f}" if max_gpu is not None else "N/A"
+                f"{max_gpu:.1f}" if max_gpu is not None else "N/A",
+                f"{accuracy:.4f}" if isinstance(accuracy, float) else accuracy
             ]
             rows.append(row)
 
-        # Вычислим ширину каждого столбца по максимальной длине элемента (с учетом заголовков)
-        col_widths = []
-        for i in range(len(headers)):
-            max_len = max(len(headers[i]), max(len(row[i]) for row in rows) if rows else 0)
-            col_widths.append(max_len)
+        col_widths = [max(len(headers[i]), max(len(row[i]) for row in rows)) for i in range(len(headers))]
 
-        # Функция для форматирования строки с выравниванием по ширинам
         def format_row(row):
             return " | ".join(cell.ljust(col_widths[i]) for i, cell in enumerate(row))
 
-        # Сборка всей таблицы
-        table_lines = []
-        table_lines.append("=== Все метрики производительности и времени ===")
-        table_lines.append(format_row(headers))
-        table_lines.append("-+-".join("-" * w for w in col_widths))
-        for row in rows:
-            table_lines.append(format_row(row))
+        table_lines = [
+            f"=== Метрики производительности и времени {self.model_name} ===",
+            format_row(headers),
+            "-+-".join("-" * w for w in col_widths),
+        ]
+        table_lines.extend(format_row(row) for row in rows)
 
-        table_text = "\n".join(table_lines)
-        self.logger.info("\n" + table_text)
+        self.logger.info("\n" + "\n".join(table_lines))
 
     def _sample_resources(self, key):
         # CPU usage (процент от 0 до 100)

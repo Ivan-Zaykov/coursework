@@ -56,6 +56,8 @@ def evaluate_naive_bayes(clf):
         metric_logger.stop("evaluate")
 
         accuracy = accuracy_score(y_test, predictions)
+        metric_logger.set_accuracy(accuracy)
+
         results_logger.info(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
         print(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
     except Exception as e:

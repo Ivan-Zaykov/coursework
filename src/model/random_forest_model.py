@@ -61,6 +61,8 @@ def evaluate_random_forest(clf):
         metric_logger.stop("evaluation")
 
         accuracy = accuracy_score(y_test, predictions)
+        metric_logger.set_accuracy(accuracy)
+
         result_msg = f"Random Forest accuracy: {accuracy:.4f}"
         print(result_msg)
         results_logger.info(result_msg)

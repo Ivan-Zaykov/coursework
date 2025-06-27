@@ -52,6 +52,8 @@ def evaluate_logistic_regression_tf(model):
 
         metric_logger.start("evaluation")
         loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+        metric_logger.set_accuracy(accuracy)
+
         metric_logger.stop("evaluation")
 
         result_msg = f"TF Logistic Regression accuracy: {accuracy:.4f}"
