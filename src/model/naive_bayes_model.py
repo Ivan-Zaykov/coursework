@@ -1,40 +1,17 @@
 import os
-import logging
 import time
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.metrics import accuracy_score
-from data_loader import load_mnist
 from tqdm import tqdm
 import joblib
 
-# Пути
-LOG_DIR = "logs"
-RESULTS_LOG = os.path.join(LOG_DIR, "model_results.log")
-ERRORS_LOG = os.path.join(LOG_DIR, "model_errors.log")
-MODEL_DIR = "models"
+from src.utils.data_loader import load_mnist
+from src.utils.logger_setup import setup_loggers
+from src.utils.path_utils import MODEL_DIR
+
+results_logger, error_logger = setup_loggers()
+
 MODEL_PATH = os.path.join(MODEL_DIR, "naive_bayes_model.joblib")
-
-# Создание директорий
-os.makedirs(LOG_DIR, exist_ok=True)
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    handlers=[
-        logging.FileHandler(RESULTS_LOG),
-        logging.StreamHandler()
-    ]
-)
-results_logger = logging.getLogger('results_logger')
-
-error_logger = logging.getLogger('error_logger')
-error_handler = logging.FileHandler(ERRORS_LOG)
-error_handler.setLevel(logging.ERROR)
-error_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-error_handler.setFormatter(error_formatter)
-error_logger.addHandler(error_handler)
 
 def train_and_evaluate_naive_bayes():
     try:

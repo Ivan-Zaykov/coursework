@@ -1,5 +1,5 @@
 import tensorflow as tf
-from preprocessing.binarizer import binarize_images
+from src.preprocessing.binarizer import binarize_images
 
 def load_mnist(flatten=True, normalize=True, binarize=False, threshold=0.5):
     """

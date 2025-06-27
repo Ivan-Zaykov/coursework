@@ -1,4 +1,4 @@
-from src.data_loader import load_mnist
+from src.utils.data_loader import load_mnist
 import matplotlib.pyplot as plt
 
 def show_samples(images, labels, num=9):
