@@ -1,37 +1,50 @@
 import os
-import time
-from sklearn.naive_bayes import BernoulliNB
-from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 import joblib
-
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.metrics import accuracy_score
 from src.utils.data_loader import load_mnist
 from src.utils.logger_setup import setup_loggers
 from src.utils.path_utils import MODEL_DIR
+from src.utils.timing_logger import TimingLogger
 
-results_logger, error_logger = setup_loggers()
-
+MODEL_NAME = "Naive Bayes"
 MODEL_PATH = os.path.join(MODEL_DIR, "naive_bayes_model.joblib")
 
-def train_and_evaluate_naive_bayes():
-    try:
-        X_train, y_train, X_test, y_test = load_mnist(flatten=True, binarize=True)
+results_logger, error_logger = setup_loggers()
+timing_logger = TimingLogger(results_logger, model_name=MODEL_NAME)
 
+def train_naive_bayes():
+    try:
+        X_train, y_train, _, _ = load_mnist(flatten=True, binarize=True)
         if os.path.exists(MODEL_PATH):
-            print(f"Загрузка модели из {MODEL_PATH} ...")
+            results_logger.info(f"Loading model from {MODEL_PATH} ...")
             clf = joblib.load(MODEL_PATH)
-            elapsed_train = "N/A (модель загружена)"
+            results_logger.info("Model loaded, skipping training.")
+            return clf
         else:
             clf = BernoulliNB()
-            print("Обучение Naive Bayes...")
-            start_time = time.time()
+            results_logger.info("Training Naive Bayes model...")
+            timing_logger.start("train")
             clf.fit(X_train, y_train)
-            elapsed_train = time.time() - start_time
-            print(f"Обучение завершено за {elapsed_train:.2f} секунд")
+            timing_logger.stop("train")
+            elapsed_train = timing_logger.durations.get(f"{MODEL_NAME}_train", None)
+            if elapsed_train is not None:
+                results_logger.info(f"Training completed in {elapsed_train:.2f} seconds")
             joblib.dump(clf, MODEL_PATH)
-            print(f"Модель сохранена в {MODEL_PATH}")
+            results_logger.info(f"Model saved to {MODEL_PATH}")
+            return clf
+    except Exception as e:
+        error_logger.error(f"Error during training {MODEL_NAME}: {e}", exc_info=True)
+        print(f"Произошла ошибка при обучении: {e}")
+        return None
 
-        print("Предсказание...")
+def evaluate_naive_bayes(clf):
+    try:
+        _, _, X_test, y_test = load_mnist(flatten=True, binarize=True)
+        results_logger.info("Starting prediction...")
+        timing_logger.start("evaluate")
+
         predictions = []
         batch_size = 1000
         for start_idx in tqdm(range(0, len(X_test), batch_size), desc="Predicting"):
@@ -40,13 +53,19 @@ def train_and_evaluate_naive_bayes():
             predictions.extend(batch_preds)
         predictions = predictions[:len(X_test)]
 
-        accuracy = accuracy_score(y_test, predictions)
-        results_logger.info(f"Naive Bayes accuracy: {accuracy:.4f}, Training time: {elapsed_train}")
-        print(f"Naive Bayes accuracy: {accuracy:.4f}")
+        timing_logger.stop("evaluate")
 
+        accuracy = accuracy_score(y_test, predictions)
+        results_logger.info(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
+        print(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
     except Exception as e:
-        error_logger.error(f"Error in Naive Bayes model: {e}", exc_info=True)
-        print(f"Произошла ошибка: {e}")
+        error_logger.error(f"Error during evaluation {MODEL_NAME}: {e}", exc_info=True)
+        print(f"Произошла ошибка при оценке: {e}")
 
 if __name__ == "__main__":
-    train_and_evaluate_naive_bayes()
+    timing_logger.start("total_run")
+    model = train_naive_bayes()
+    if model:
+        evaluate_naive_bayes(model)
+    timing_logger.stop("total_run")
+    timing_logger.log_all()

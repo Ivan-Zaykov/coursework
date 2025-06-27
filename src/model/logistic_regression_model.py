@@ -1,20 +1,22 @@
-import time
+from src.utils.timing_logger import TimingLogger
 import os
 import tensorflow as tf
 from src.utils.data_loader import load_mnist
 from src.utils.logger_setup import setup_loggers
 from src.utils.path_utils import MODEL_DIR
 
+MODEL_NAME = "TF Logistic Regression"
+
 results_logger, error_logger = setup_loggers()
+timing_logger = TimingLogger(results_logger, model_name=MODEL_NAME)
 
 def train_logistic_regression_tf(epochs=10, batch_size=128):
     try:
-        X_train, y_train, X_test, y_test = load_mnist(flatten=True, normalize=True)
-
+        X_train, y_train, _, _ = load_mnist(flatten=True, normalize=True)
         MODEL_PATH = os.path.join(MODEL_DIR, "logistic_regression_model.keras")
 
         if os.path.exists(MODEL_PATH):
-            print(f"Загрузка модели из {MODEL_PATH} ...")
+            results_logger.info(f"Loading model from {MODEL_PATH} ...")
             model = tf.keras.models.load_model(MODEL_PATH)
         else:
             model = tf.keras.Sequential([
@@ -28,24 +30,43 @@ def train_logistic_regression_tf(epochs=10, batch_size=128):
                 metrics=['accuracy']
             )
 
-            start_time = time.time()
+            timing_logger.start("training")
             model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, verbose=2)
-            elapsed_time = time.time() - start_time
+            timing_logger.stop( "training")
 
             model.save(MODEL_PATH)
             results_logger.info(f"Model saved to {MODEL_PATH}")
-            results_logger.info(f"Model trained and saved in {elapsed_time:.2f} seconds")
-            print(f"Обучение завершено за {elapsed_time:.2f} секунд")
+            print("Обучение завершено")
 
-        loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-        result_msg = f"TF Logistic Regression accuracy: {accuracy:.4f}"
-        print(result_msg)
-        results_logger.info(f"Model: TF Logistic Regression, Accuracy: {accuracy:.4f}")
+        return model
 
     except Exception as e:
-        error_logger.error(f"Error in TF Logistic Regression model: {e}", exc_info=True)
-        print(f"Произошла ошибка: {e}")
+        error_logger.error(f"Error in training TF Logistic Regression model: {e}", exc_info=True)
+        print(f"Произошла ошибка при обучении: {e}")
+        return None
+
+
+def evaluate_logistic_regression_tf(model):
+    try:
+        _, _, X_test, y_test = load_mnist(flatten=True, normalize=True)
+
+        timing_logger.start( "evaluation")
+        loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+        timing_logger.stop( "evaluation")
+
+        result_msg = f"TF Logistic Regression accuracy: {accuracy:.4f}"
+        print(result_msg)
+        results_logger.info(result_msg)
+
+    except Exception as e:
+        error_logger.error(f"Error in evaluating TF Logistic Regression model: {e}", exc_info=True)
+        print(f"Произошла ошибка при оценке: {e}")
 
 
 if __name__ == "__main__":
-    train_logistic_regression_tf()
+    timing_logger.start("total_run")
+    model = train_logistic_regression_tf()
+    if model:
+        evaluate_logistic_regression_tf(model)
+    timing_logger.stop("total_run")
+    timing_logger.log_all()
