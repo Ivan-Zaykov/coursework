@@ -10,6 +10,11 @@ from src.utils.metric_logger import MetricLogger
 
 MODEL_NAME = "Naive Bayes"
 MODEL_PATH = os.path.join(MODEL_DIR, "naive_bayes_model.joblib")
+BEST_PARAMS = {
+    "alpha": 0.10292247147901223,
+    "binarize": 0.5,
+    "fit_prior": False
+}
 
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
@@ -23,8 +28,12 @@ def train_naive_bayes():
             results_logger.info("Model loaded, skipping training.")
             return clf
         else:
-            clf = BernoulliNB()
-            results_logger.info("Training Naive Bayes model...")
+            # Создаем модель с оптимальными параметрами
+            clf = BernoulliNB(alpha=BEST_PARAMS["alpha"],
+                              binarize=BEST_PARAMS["binarize"],
+                              fit_prior=BEST_PARAMS["fit_prior"])
+
+            results_logger.info("Training Naive Bayes model with optimized hyperparameters...")
             metric_logger.start("train")
             clf.fit(X_train, y_train)
             metric_logger.stop("train")
