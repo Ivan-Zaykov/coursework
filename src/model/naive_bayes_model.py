@@ -60,6 +60,9 @@ def evaluate_naive_bayes(clf):
 
         results_logger.info(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
         print(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
+
+        # Логируем confusion matrix
+        metric_logger.log_confusion_matrix(y_test, predictions)
     except Exception as e:
         error_logger.error(f"Error during evaluation {MODEL_NAME}: {e}", exc_info=True)
         print(f"Произошла ошибка при оценке: {e}")

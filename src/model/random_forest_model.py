@@ -67,6 +67,8 @@ def evaluate_random_forest(clf):
         print(result_msg)
         results_logger.info(result_msg)
 
+        # Логируем confusion matrix
+        metric_logger.log_confusion_matrix(y_test, predictions)
     except Exception as e:
         error_logger.error(f"Error in evaluating Random Forest model: {e}", exc_info=True)
         print(f"Произошла ошибка при оценке: {e}")

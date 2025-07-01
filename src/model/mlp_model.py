@@ -5,7 +5,7 @@ from src.utils.logger_setup import setup_loggers
 from src.utils.path_utils import MODEL_DIR
 from src.utils.metric_logger import MetricLogger
 
-MODEL_NAME = "MLP Multi-Layer Perceptron"
+MODEL_NAME = "MLP"
 
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
@@ -64,6 +64,14 @@ def evaluate_mlp(model):
 
         # Запишем accuracy в MetricLogger
         metric_logger.set_accuracy(accuracy)
+
+        # Получаем предсказания вероятностей
+        y_pred_probs = model.predict(X_test)
+        # Конвертируем вероятности в метки классов
+        y_pred_labels = y_pred_probs.argmax(axis=1)
+
+        # Логируем confusion matrix
+        metric_logger.log_confusion_matrix(y_test, y_pred_labels)
 
     except Exception as e:
         error_logger.error(f"Error in evaluating MLP model: {e}", exc_info=True)

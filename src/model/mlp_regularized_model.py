@@ -66,6 +66,13 @@ def evaluate_mlp_regularized(model):
         print(result_msg)
         results_logger.info(result_msg)
 
+        # Получаем предсказания вероятностей
+        y_pred_probs = model.predict(X_test)
+        # Конвертируем вероятности в метки классов
+        y_pred_labels = y_pred_probs.argmax(axis=1)
+
+        # Логируем confusion matrix
+        metric_logger.log_confusion_matrix(y_test, y_pred_labels)
     except Exception as e:
         error_logger.error(f"Error in evaluating MLP Regularized model: {e}", exc_info=True)
         print(f"Произошла ошибка при оценке: {e}")

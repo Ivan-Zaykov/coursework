@@ -1,5 +1,10 @@
+import datetime
 import time
 import psutil
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 try:
     import pynvml
@@ -121,3 +126,56 @@ class MetricLogger:
         else:
             # Если нет GPU или pynvml - None
             self.gpu_usages[key].append(None)
+
+    def log_confusion_matrix(self, y_true, y_pred, save_dir="logs"):
+        """
+        Логирует confusion matrix в текст и сохраняет картинку в файл с датой и именем модели.
+
+        :param y_true: истинные метки
+        :param y_pred: предсказанные метки
+        :param labels: список меток классов (по умолчанию None)
+        :param save_dir: директория для сохранения картинки (если None — не сохраняет)
+        """
+        labels = list(range(10))
+
+        cm = confusion_matrix(y_true, y_pred, labels=labels)
+        num_classes = len(cm)
+
+        # Текстовая таблица — без изменений
+        header = [""] + [str(lbl) for lbl in (labels if labels else range(num_classes))]
+        rows = []
+        for i, row in enumerate(cm):
+            rows.append([str(header[i + 1])] + [str(x) for x in row])
+
+        col_widths = [max(len(str(x)) for x in col) for col in zip(*([header] + rows))]
+
+        def format_row(row):
+            return " | ".join(str(cell).ljust(col_widths[i]) for i, cell in enumerate(row))
+
+        table_lines = [
+            f"=== Confusion Matrix for {self.model_name} ===",
+            format_row(header),
+            "-+-".join("-" * w for w in col_widths),
+        ]
+        table_lines.extend(format_row(row) for row in rows)
+        self.logger.info("\n" + "\n".join(table_lines))
+
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            safe_model_name = self.model_name.replace(" ", "_").replace("/", "_")
+            filename = f"confusion_matrix_{self.model_name}_{timestamp}.png"
+            save_path = os.path.join(save_dir, filename)
+
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                        xticklabels=(labels if labels else None),
+                        yticklabels=(labels if labels else None))
+            plt.xlabel("Предсказанный класс")
+            plt.ylabel("Истинный класс")
+            plt.title(f"Confusion Matrix: {self.model_name}")
+            plt.tight_layout()
+            plt.savefig(save_path)
+            plt.close()
+
+            self.logger.info(f"Confusion matrix image saved to {save_path}")

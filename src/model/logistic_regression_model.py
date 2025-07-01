@@ -54,6 +54,14 @@ def evaluate_logistic_regression_tf(model):
         loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
         metric_logger.set_accuracy(accuracy)
 
+        # Получаем вероятности классов
+        y_pred_probs = model.predict(X_test)
+        # Конвертируем вероятности в метки классов (индексы с максимальной вероятностью)
+        y_pred = y_pred_probs.argmax(axis=1)
+
+        # Логируем confusion matrix
+        metric_logger.log_confusion_matrix(y_test, y_pred)
+
         metric_logger.stop("evaluation")
 
         result_msg = f"TF Logistic Regression accuracy: {accuracy:.4f}"

@@ -24,6 +24,7 @@ def train_and_evaluate_knn(k=3):
 
         accuracy = accuracy_score(y_test, y_pred)
         metric_logger.set_accuracy(accuracy)
+        metric_logger.log_confusion_matrix(y_test, y_pred)
 
         result_msg = f"{MODEL_NAME} accuracy (k={k}): {accuracy:.4f}"
         print(result_msg)

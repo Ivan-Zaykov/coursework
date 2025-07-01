@@ -5,7 +5,7 @@ from src.utils.logger_setup import setup_loggers
 from src.utils.path_utils import MODEL_DIR
 from src.utils.metric_logger import MetricLogger
 
-MODEL_NAME = "CNN MNIST"
+MODEL_NAME = "CNN"
 
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
@@ -69,6 +69,11 @@ def evaluate_cnn(model, X_test, y_test):
 
         # Запишем accuracy в MetricLogger
         metric_logger.set_accuracy(accuracy)
+
+        y_pred = model.predict(X_test)
+        y_pred_labels = y_pred.argmax(axis=1)
+
+        metric_logger.log_confusion_matrix(y_test, y_pred_labels)
 
     except Exception as e:
         error_logger.error(f"Error in evaluating CNN model: {e}", exc_info=True)
