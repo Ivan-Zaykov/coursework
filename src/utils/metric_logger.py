@@ -2,6 +2,7 @@ import datetime
 import time
 import psutil
 import os
+import csv
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
@@ -28,10 +29,33 @@ class MetricLogger:
         self.gpu_usages = {}
         self.accuracy_scores = {}
 
+        # Для гиперпараметров: список словарей, каждый со значениями параметров и accuracy
+        self.hyperparams_log = []
+
+        # Папка для текущего запуска
+        self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.base_log_dir = os.path.join("logs", self.model_name.replace(" ", "_"), self.timestamp)
+        os.makedirs(self.base_log_dir, exist_ok=True)
+
     def set_accuracy(self, accuracy: float):
         """Установить accuracy для total_run"""
         key = f"{self.model_name}_total_run"
         self.accuracy_scores[key] = accuracy
+
+    def set_hyperparameters(self, hyperparams: dict, accuracy: float):
+        """
+        Добавить запись с гиперпараметрами и accuracy.
+
+        :param hyperparams: dict с гиперпараметрами, например {"lr": 0.01, "batch_size": 32}
+        :param accuracy: float - accuracy для этих гиперпараметров
+        """
+        entry = hyperparams.copy()
+        entry["accuracy"] = accuracy
+        self.hyperparams_log.append(entry)
+
+        # Логируем в текстовом виде
+        params_str = ", ".join(f"{k}={v}" for k, v in hyperparams.items())
+        self.logger.info(f"Hyperparams: {params_str}, Accuracy: {accuracy:.4f}")
 
     def start(self, metric_name: str):
         key = f"{self.model_name}_{metric_name}"
@@ -104,6 +128,29 @@ class MetricLogger:
 
         self.logger.info("\n" + "\n".join(table_lines))
 
+        # Сохраняем CSV файл с метриками
+        csv_path = os.path.join(self.base_log_dir, "metrics.csv")
+        with open(csv_path, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            for row in rows:
+                writer.writerow(row)
+        self.logger.info(f"Metrics CSV saved to {csv_path}")
+
+        # Сохраняем CSV гиперпараметров, если есть
+        if self.hyperparams_log:
+            hp_csv_path = os.path.join(self.base_log_dir, "hyperparameters.csv")
+            with open(hp_csv_path, mode="w", newline="", encoding="utf-8") as f:
+                keys = set()
+                for entry in self.hyperparams_log:
+                    keys.update(entry.keys())
+                keys = sorted(keys)
+                writer = csv.DictWriter(f, fieldnames=keys)
+                writer.writeheader()
+                for entry in self.hyperparams_log:
+                    writer.writerow(entry)
+            self.logger.info(f"Hyperparameters CSV saved to {hp_csv_path}")
+
     def _sample_resources(self, key):
         # CPU usage (процент от 0 до 100)
         cpu = psutil.cpu_percent(interval=None)
@@ -127,7 +174,7 @@ class MetricLogger:
             # Если нет GPU или pynvml - None
             self.gpu_usages[key].append(None)
 
-    def log_confusion_matrix(self, y_true, y_pred, save_dir="logs"):
+    def log_confusion_matrix(self, y_true, y_pred, labels=None, save_dir=None):
         """
         Логирует confusion matrix в текст и сохраняет картинку в файл с датой и именем модели.
 
@@ -136,13 +183,13 @@ class MetricLogger:
         :param labels: список меток классов (по умолчанию None)
         :param save_dir: директория для сохранения картинки (если None — не сохраняет)
         """
-        labels = list(range(10))
+        labels = labels if labels is not None else list(range(10))
 
         cm = confusion_matrix(y_true, y_pred, labels=labels)
         num_classes = len(cm)
 
         # Текстовая таблица — без изменений
-        header = [""] + [str(lbl) for lbl in (labels if labels else range(num_classes))]
+        header = [""] + [str(lbl) for lbl in labels]
         rows = []
         for i, row in enumerate(cm):
             rows.append([str(header[i + 1])] + [str(x) for x in row])
@@ -160,22 +207,23 @@ class MetricLogger:
         table_lines.extend(format_row(row) for row in rows)
         self.logger.info("\n" + "\n".join(table_lines))
 
-        if save_dir:
-            os.makedirs(save_dir, exist_ok=True)
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            safe_model_name = self.model_name.replace(" ", "_").replace("/", "_")
-            filename = f"confusion_matrix_{self.model_name}_{timestamp}.png"
-            save_path = os.path.join(save_dir, filename)
+        # Если save_dir не передан, сохраняем в базовую папку запуска
+        save_dir = save_dir or self.base_log_dir
+        os.makedirs(save_dir, exist_ok=True)
 
-            plt.figure(figsize=(8, 6))
-            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
-                        xticklabels=(labels if labels else None),
-                        yticklabels=(labels if labels else None))
-            plt.xlabel("Предсказанный класс")
-            plt.ylabel("Истинный класс")
-            plt.title(f"Confusion Matrix: {self.model_name}")
-            plt.tight_layout()
-            plt.savefig(save_path)
-            plt.close()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        safe_model_name = self.model_name.replace(" ", "_").replace("/", "_")
+        filename = f"confusion_matrix_{safe_model_name}_{timestamp}.png"
+        save_path = os.path.join(save_dir, filename)
 
-            self.logger.info(f"Confusion matrix image saved to {save_path}")
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                    xticklabels=labels, yticklabels=labels)
+        plt.xlabel("Предсказанный класс")
+        plt.ylabel("Истинный класс")
+        plt.title(f"Confusion Matrix: {self.model_name}")
+        plt.tight_layout()
+        plt.savefig(save_path)
+        plt.close()
+
+        self.logger.info(f"Confusion matrix image saved to {save_path}")
