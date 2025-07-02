@@ -71,7 +71,7 @@ class MetricLogger:
     def stop(self, metric_name: str):
         key = f"{self.model_name}_{metric_name}"
         if key not in self.start_times:
-            self.logger.warning(f"Timer '{key}' was not started.")
+            self.logger.warning(f"Timer '{key}' was not started. Skipping stop.")
             return
 
         elapsed = time.perf_counter() - self.start_times[key]
@@ -81,10 +81,10 @@ class MetricLogger:
         self._sample_resources(key)
 
         # Теперь определим пиковые значения за период (start-stop)
-        max_cpu = max(self.cpu_usages[key]) if self.cpu_usages[key] else 0
-        max_ram = max(self.ram_usages[key]) if self.ram_usages[key] else 0
+        max_cpu = max(self.cpu_usages.get(key, [0])) if self.cpu_usages.get(key) else 0
+        max_ram = max(self.ram_usages.get(key, [0])) if self.ram_usages.get(key) else 0
         # Фильтруем None из gpu_usages
-        gpu_values = [v for v in self.gpu_usages[key] if v is not None]
+        gpu_values = [v for v in self.gpu_usages.get(key, []) if v is not None]
         max_gpu = max(gpu_values) if gpu_values else None
 
         self.logger.info(
@@ -98,8 +98,8 @@ class MetricLogger:
         rows = []
 
         for key, duration in self.durations.items():
-            max_cpu = max(self.cpu_usages.get(key, [0]))
-            max_ram = max(self.ram_usages.get(key, [0]))
+            max_cpu = max(self.cpu_usages.get(key, [0])) if self.cpu_usages.get(key) else 0
+            max_ram = max(self.ram_usages.get(key, [0])) if self.ram_usages.get(key) else 0
             gpu_values = [v for v in self.gpu_usages.get(key, []) if v is not None]
             max_gpu = max(gpu_values) if gpu_values else None
             accuracy = self.accuracy_scores.get(key, "—")
@@ -114,30 +114,33 @@ class MetricLogger:
             ]
             rows.append(row)
 
-        col_widths = [max(len(headers[i]), max(len(row[i]) for row in rows)) for i in range(len(headers))]
+        if not rows:
+            self.logger.info(f"No metric data to log for {self.model_name}. Skipping metrics CSV and table.")
+        else:
+            col_widths = [max(len(headers[i]), max(len(row[i]) for row in rows)) for i in range(len(headers))]
 
-        def format_row(row):
-            return " | ".join(cell.ljust(col_widths[i]) for i, cell in enumerate(row))
+            def format_row(row):
+                return " | ".join(cell.ljust(col_widths[i]) for i, cell in enumerate(row))
 
-        table_lines = [
-            f"=== Метрики производительности и времени {self.model_name} ===",
-            format_row(headers),
-            "-+-".join("-" * w for w in col_widths),
-        ]
-        table_lines.extend(format_row(row) for row in rows)
+            table_lines = [
+                f"=== Метрики производительности и времени {self.model_name} ===",
+                format_row(headers),
+                "-+-".join("-" * w for w in col_widths),
+            ]
+            table_lines.extend(format_row(row) for row in rows)
 
-        self.logger.info("\n" + "\n".join(table_lines))
+            self.logger.info("\n" + "\n".join(table_lines))
 
-        # Сохраняем CSV файл с метриками
-        csv_path = os.path.join(self.base_log_dir, "metrics.csv")
-        with open(csv_path, mode="w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
-            for row in rows:
-                writer.writerow(row)
-        self.logger.info(f"Metrics CSV saved to {csv_path}")
+            # Сохраняем CSV файл с метриками
+            csv_path = os.path.join(self.base_log_dir, "metrics.csv")
+            with open(csv_path, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(headers)
+                for row in rows:
+                    writer.writerow(row)
+            self.logger.info(f"Metrics CSV saved to {csv_path}")
 
-        # Сохраняем CSV гиперпараметров, если есть
+        # Сохраняем CSV гиперпараметров, если есть (всегда)
         if self.hyperparams_log:
             hp_csv_path = os.path.join(self.base_log_dir, "hyperparameters.csv")
             with open(hp_csv_path, mode="w", newline="", encoding="utf-8") as f:
@@ -154,12 +157,12 @@ class MetricLogger:
     def _sample_resources(self, key):
         # CPU usage (процент от 0 до 100)
         cpu = psutil.cpu_percent(interval=None)
-        self.cpu_usages[key].append(cpu)
+        self.cpu_usages.setdefault(key, []).append(cpu)
 
         # RAM usage в байтах (RSS используемой памяти процесса)
         process = psutil.Process()
         ram = process.memory_info().rss
-        self.ram_usages[key].append(ram)
+        self.ram_usages.setdefault(key, []).append(ram)
 
         # GPU usage через pynvml (если доступна)
         if GPU_AVAILABLE:
@@ -167,12 +170,12 @@ class MetricLogger:
                 handle = pynvml.nvmlDeviceGetHandleByIndex(0)  # первая видеокарта
                 util = pynvml.nvmlDeviceGetUtilizationRates(handle)
                 gpu = util.gpu  # процент загрузки GPU
-                self.gpu_usages[key].append(gpu)
+                self.gpu_usages.setdefault(key, []).append(gpu)
             except Exception:
-                self.gpu_usages[key].append(None)
+                self.gpu_usages.setdefault(key, []).append(None)
         else:
             # Если нет GPU или pynvml - None
-            self.gpu_usages[key].append(None)
+            self.gpu_usages.setdefault(key, []).append(None)
 
     def log_confusion_matrix(self, y_true, y_pred, labels=None, save_dir=None):
         """
