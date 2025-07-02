@@ -37,14 +37,11 @@ def grid_search_knn():
                     "weights": weight,
                     "p": p_val
                 }
-                metric_logger.start("train")
+
                 knn = KNeighborsClassifier(**params)
                 knn.fit(X_train, y_train)
-                metric_logger.stop("train")
 
-                metric_logger.start("evaluate")
                 y_pred = knn.predict(X_test)
-                metric_logger.stop("evaluate")
 
                 accuracy = accuracy_score(y_test, y_pred)
                 metric_logger.set_accuracy(accuracy)
