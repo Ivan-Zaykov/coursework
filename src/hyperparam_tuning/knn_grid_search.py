@@ -5,7 +5,7 @@ from src.utils.logger_setup import setup_loggers
 from src.utils.metric_logger import MetricLogger
 from tqdm import tqdm
 
-MODEL_NAME = "k-NN"
+MODEL_NAME = "k-NN GridSearch"
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 

@@ -5,7 +5,7 @@ from src.utils.data_loader import load_mnist
 from src.utils.logger_setup import setup_loggers
 from src.utils.metric_logger import MetricLogger
 
-MODEL_NAME = "Naive Bayes"
+MODEL_NAME = "Naive Bayes RandomizedSearch"
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
