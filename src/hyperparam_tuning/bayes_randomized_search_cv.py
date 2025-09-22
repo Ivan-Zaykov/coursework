@@ -39,16 +39,28 @@ def randomized_search_naive_bayes():
 
         results_logger.info(f"RandomizedSearchCV finished.")
 
+        # Логируем все комбинации гиперпараметров с mean и std accuracy
+        for i in range(len(random_search.cv_results_['params'])):
+            params = random_search.cv_results_['params'][i]
+            mean_score = random_search.cv_results_['mean_test_score'][i]
+            std_score = random_search.cv_results_['std_test_score'][i]
+
+            # Добавляем номер итерации
+            params_with_iter = params.copy()
+            params_with_iter["iteration"] = i + 1
+            params_with_iter["mean_accuracy"] = mean_score
+            params_with_iter["std_accuracy"] = std_score
+
+            metric_logger.set_hyperparameters(params_with_iter, mean_score)
+
+        # Выводим лучший вариант
         best_params = random_search.best_params_
         best_score = random_search.best_score_
 
         results_logger.info(f"Best params: {best_params}, Best accuracy: {best_score:.4f}")
         print(f"Best params: {best_params}, Best accuracy: {best_score:.4f}")
 
-        # Записываем в metric_logger только лучшие параметры и accuracy
-        metric_logger.set_hyperparameters(best_params, best_score)
-
-        # Сохраняем логи и CSV файлы
+        # Сохраняем все логи и CSV файлы
         metric_logger.log_all()
 
     except Exception as e:
