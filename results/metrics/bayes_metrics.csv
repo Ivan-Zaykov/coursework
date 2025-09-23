@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+Naive Bayes_train,0.5438,17.1,1010.2,0.0,—
+Naive Bayes_evaluate,0.0733,85.5,715.0,0.0,—
+Naive Bayes_total_run,6.1450,62.8,658.6,0.0,0.8433

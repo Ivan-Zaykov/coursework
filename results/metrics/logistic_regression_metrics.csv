@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+TF Logistic Regression_train,6.6970,11.8,1373.9,0.0,—
+TF Logistic Regression_evaluate,0.8828,8.8,1173.1,0.0,—
+TF Logistic Regression_total_run,8.4973,25.0,1113.3,0.0,0.9272

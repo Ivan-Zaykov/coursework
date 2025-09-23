@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+k-NN_train,0.0310,7.8,1072.6,0.0,—
+k-NN_evaluate,4.9080,70.1,1085.4,0.0,—
+k-NN_total_run,5.5352,11.9,670.6,0.0,0.9717

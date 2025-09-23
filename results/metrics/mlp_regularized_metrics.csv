@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+MLP Regularized_training,15.4423,21.3,1411.8,0.0,—
+MLP Regularized_evaluation,0.5324,9.8,1154.0,0.0,—
+MLP Regularized_total_run,17.3741,10.8,1157.8,0.0,0.9817

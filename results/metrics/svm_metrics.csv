@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+SVM_train,190.2946,13.8,1130.3,0.0,—
+SVM_evaluate,56.7476,7.3,838.9,0.0,—
+SVM_total_run,251.1436,18.4,782.8,0.0,0.9837

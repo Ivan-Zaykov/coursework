@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+MLP_training,20.9303,17.6,1510.9,0.0,—
+MLP_evaluation,0.4854,9.8,1250.4,0.0,—
+MLP_total_run,22.7298,11.0,1180.6,0.0,0.9804

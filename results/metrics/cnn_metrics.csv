@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+CNN_training,32.9952,49.6,1534.5,0.0,—
+CNN_evaluation,0.5552,17.6,1204.1,0.0,—
+CNN_total_run,34.6356,19.8,1217.4,0.0,0.9853

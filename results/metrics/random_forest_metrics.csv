@@ -1,0 +1,4 @@
+Metric,Duration (sec),Peak CPU (%),Peak RAM (MB),Peak GPU (%),Accuracy
+Random Forest_train,5.8822,91.7,1404.2,0.0,—
+Random Forest_evaluate,0.3647,20.4,1114.0,0.0,—
+Random Forest_total_run,7.1503,17.7,1057.6,0.0,0.9659
