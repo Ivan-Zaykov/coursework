@@ -15,6 +15,13 @@ MODEL_PATH = os.path.join(MODEL_DIR, "svm_model.joblib")
 results_logger, error_logger = setup_loggers()
 metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
+# Подобранные гиперпараметры
+BEST_PARAMS = {
+    "C": 10,
+    "kernel": "rbf",
+    "gamma": "scale"
+}
+
 def train_svm():
     try:
         X_train, y_train, _, _ = load_mnist(flatten=True, normalize=True)
@@ -25,8 +32,8 @@ def train_svm():
             results_logger.info("Model loaded, skipping training.")
             return clf
         else:
-            clf = svm.SVC(kernel='linear')
-            results_logger.info("Training SVM model...")
+            clf = svm.SVC(**BEST_PARAMS)
+            results_logger.info("Training SVM model with optimized hyperparameters...")
             metric_logger.start("train")
             clf.fit(X_train, y_train)
             metric_logger.stop("train")
@@ -59,12 +66,11 @@ def evaluate_svm(clf):
 
         accuracy = accuracy_score(y_test, predictions)
         metric_logger.set_accuracy(accuracy)
+        metric_logger.log_confusion_matrix(y_test, predictions)
 
         results_logger.info(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
         print(f"{MODEL_NAME} accuracy: {accuracy:.4f}")
 
-        # Логируем confusion matrix
-        metric_logger.log_confusion_matrix(y_test, predictions)
     except Exception as e:
         error_logger.error(f"Error during evaluation {MODEL_NAME}: {e}", exc_info=True)
         print(f"Произошла ошибка при оценке: {e}")

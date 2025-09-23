@@ -16,7 +16,16 @@ metric_logger = MetricLogger(results_logger, model_name=MODEL_NAME)
 
 MODEL_PATH = os.path.join(MODEL_DIR, "random_forest_model.joblib")
 
-def train_random_forest(n_estimators=100):
+# Подобранные гиперпараметры
+BEST_PARAMS = {
+    "n_estimators": 150,
+    "max_depth": 20,
+    "max_features": "log2",
+    "random_state": 42,
+    "n_jobs": -1
+}
+
+def train_random_forest():
     try:
         X_train, y_train, _, _ = load_mnist(flatten=True, normalize=True)
 
@@ -24,12 +33,12 @@ def train_random_forest(n_estimators=100):
             results_logger.info(f"Loading model from {MODEL_PATH} ...")
             clf = joblib.load(MODEL_PATH)
         else:
-            clf = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
+            clf = RandomForestClassifier(**BEST_PARAMS)
 
-            results_logger.info("Training Random Forest model...")
-            metric_logger.start("training")
+            results_logger.info("Training Random Forest model with optimized hyperparameters...")
+            metric_logger.start("train")
             clf.fit(X_train, y_train)
-            metric_logger.stop("training")
+            metric_logger.stop("train")
 
             joblib.dump(clf, MODEL_PATH)
             results_logger.info(f"Model saved to {MODEL_PATH}")
@@ -38,7 +47,7 @@ def train_random_forest(n_estimators=100):
         return clf
 
     except Exception as e:
-        error_logger.error(f"Error in training Random Forest model: {e}", exc_info=True)
+        error_logger.error(f"Error in training {MODEL_NAME}: {e}", exc_info=True)
         print(f"Произошла ошибка при обучении: {e}")
         return None
 
@@ -47,8 +56,8 @@ def evaluate_random_forest(clf):
     try:
         _, _, X_test, y_test = load_mnist(flatten=True, normalize=True)
 
-        results_logger.info("Начинается предсказание...")
-        metric_logger.start("evaluation")
+        results_logger.info("Starting prediction...")
+        metric_logger.start("evaluate")
 
         predictions = []
         batch_size = 1000
@@ -58,19 +67,18 @@ def evaluate_random_forest(clf):
             predictions.extend(batch_preds)
         predictions = predictions[:len(X_test)]
 
-        metric_logger.stop("evaluation")
+        metric_logger.stop("evaluate")
 
         accuracy = accuracy_score(y_test, predictions)
         metric_logger.set_accuracy(accuracy)
+        metric_logger.log_confusion_matrix(y_test, predictions)
 
-        result_msg = f"Random Forest accuracy: {accuracy:.4f}"
+        result_msg = f"{MODEL_NAME} accuracy: {accuracy:.4f}"
         print(result_msg)
         results_logger.info(result_msg)
 
-        # Логируем confusion matrix
-        metric_logger.log_confusion_matrix(y_test, predictions)
     except Exception as e:
-        error_logger.error(f"Error in evaluating Random Forest model: {e}", exc_info=True)
+        error_logger.error(f"Error in evaluating {MODEL_NAME}: {e}", exc_info=True)
         print(f"Произошла ошибка при оценке: {e}")
 
 
